@@ -1,0 +1,34 @@
+name: Build iOS dependencies
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Build ${{ matrix.component }} for iPhone
+    runs-on: macos-15
+    timeout-minutes: 110
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [fex, llvm]
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: brew install cmake ninja
+      - name: Build dependency
+        run: |
+          mkdir -p ci-output
+          set -o pipefail
+          bash scripts/ci-build-dependency.sh '${{ matrix.component }}' 2>&1 | tee 'ci-output/${{ matrix.component }}.log'
+      - name: Preserve build results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-${{ matrix.component }}
+          path: ci-output/
+          if-no-files-found: error
+          retention-days: 14
