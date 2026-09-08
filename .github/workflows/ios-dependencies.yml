@@ -39,6 +39,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-${{ matrix.component }}
-          path: ci-output/
+          path: |
+            ci-output/
+            build/gnutls-ios/obj/*.log
+            build/ntdll-unix/obj/*.err
+            build/win32u-unix/obj/*.err
+            build/wineserver/obj/err-*.txt
+            wine/build-macos/config.log
           if-no-files-found: error
           retention-days: 14
