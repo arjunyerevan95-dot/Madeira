@@ -155,6 +155,8 @@ echo ""
 echo "Results: $SUCCEEDED succeeded, $FAILED failed"
 if [ -n "$FAILED_FILES" ]; then
     echo "Failed:$FAILED_FILES"
+    for name in $FAILED_FILES; do cat "$OBJ_DIR/$name.err"; done
+    exit 1
 fi
 
 echo ""

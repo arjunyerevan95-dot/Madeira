@@ -1,6 +1,12 @@
 name: Build iOS dependencies
 on:
   workflow_dispatch:
+    inputs:
+      component:
+        description: Dependency to build
+        type: choice
+        options: [all, fex, llvm, wine]
+        default: all
 permissions:
   contents: read
 jobs:
@@ -11,14 +17,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [fex, llvm]
+        component: ${{ fromJSON(inputs.component == 'all' && '["fex","llvm","wine"]' || format('["{0}"]', inputs.component)) }}
     env:
       HOMEBREW_NO_AUTO_UPDATE: '1'
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
       - name: Install build tools
-        run: brew install cmake ninja
+        run: |
+          brew install cmake ninja
+          if [ '${{ matrix.component }}' = wine ]; then
+            brew install bison llvm gnutls pkg-config
+          fi
       - name: Build dependency
         run: |
           mkdir -p ci-output
