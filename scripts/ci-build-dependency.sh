@@ -10,6 +10,8 @@ MADEIRA_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
 case "${1:?Expected fex, llvm, or wine}" in
   fex)
     git submodule update --init --depth 1 FEX
+    git -C FEX apply --check ../patches/fex-native-diagnostics.patch
+    git -C FEX apply ../patches/fex-native-diagnostics.patch
     git -C FEX submodule update --init --depth 1 --jobs 3 \
       External/fmt External/xxhash External/range-v3 External/unordered_dense
     cmake -S FEX -B FEX/build-ios -G Ninja \
