@@ -48,7 +48,7 @@ test -s "$MADEIRA_APP/Madeira"
 test -s "$MADEIRA_APP/arm64ec-windows/xtajit64.dll"
 test -s "$MADEIRA_APP/arm64ec-windows/d3d11.dll"
 plutil -lint "$MADEIRA_APP/Info.plist"
-lipo -verify_arch arm64 "$MADEIRA_APP/Madeira"
+lipo "$MADEIRA_APP/Madeira" -verify_arch arm64
 otool -L "$MADEIRA_APP/Madeira" | tee ci-output/linked-libraries.txt
 if grep -E '/Users/|/opt/homebrew/' ci-output/linked-libraries.txt; then
   echo 'Unexpected non-system dynamic library dependency' >&2
