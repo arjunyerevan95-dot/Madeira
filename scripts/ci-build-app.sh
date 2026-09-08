@@ -3,8 +3,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p ci-output
 for component in fex llvm wine; do
-  cp "build-inputs/$component/$component-ios.tar.gz" ci-output/
-  shasum -a 256 -c "build-inputs/$component/$component-sha256.txt"
+  MADEIRA_INPUT_ARCHIVE="$(find "build-inputs/$component" -name "$component-ios.tar.gz" -type f)"
+  MADEIRA_INPUT_HASH="$(find "build-inputs/$component" -name "$component-sha256.txt" -type f)"
+  test -f "$MADEIRA_INPUT_ARCHIVE"
+  test -f "$MADEIRA_INPUT_HASH"
+  cp "$MADEIRA_INPUT_ARCHIVE" ci-output/
+  shasum -a 256 -c "$MADEIRA_INPUT_HASH"
   tar -xzf "ci-output/$component-ios.tar.gz"
   rm "ci-output/$component-ios.tar.gz"
 done
