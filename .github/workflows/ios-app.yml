@@ -1,5 +1,16 @@
 name: Build Madeira iPhone package
 on:
+  workflow_call:
+    inputs:
+      fex_run:
+        required: true
+        type: string
+      llvm_run:
+        required: true
+        type: string
+      wine_run:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       fex_run:
