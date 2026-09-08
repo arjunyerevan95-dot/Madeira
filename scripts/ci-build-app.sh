@@ -2,6 +2,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p ci-output
+git submodule update --init --depth 1 FEX research/dxmt
+git -C FEX submodule update --init --depth 1 --jobs 3 \
+  External/fmt External/xxhash External/range-v3 External/unordered_dense
+git -C research/dxmt submodule update --init --depth 1 --recursive --jobs 3
 for component in fex llvm wine; do
   MADEIRA_INPUT_ARCHIVE="$(find "build-inputs/$component" -name "$component-ios.tar.gz" -type f)"
   MADEIRA_INPUT_HASH="$(find "build-inputs/$component" -name "$component-sha256.txt" -type f)"
@@ -12,10 +16,6 @@ for component in fex llvm wine; do
   tar -xzf "ci-output/$component-ios.tar.gz"
   rm "ci-output/$component-ios.tar.gz"
 done
-git submodule update --init --depth 1 FEX research/dxmt
-git -C FEX submodule update --init --depth 1 --jobs 3 \
-  External/fmt External/xxhash External/range-v3 External/unordered_dense
-git -C research/dxmt submodule update --init --depth 1 --recursive --jobs 3
 
 # Compile the three shader support modules omitted from source control.
 if ! xcrun -sdk iphoneos metal --version; then
