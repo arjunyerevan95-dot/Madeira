@@ -1,0 +1,61 @@
+name: Build Madeira iPhone package
+on:
+  workflow_dispatch:
+    inputs:
+      fex_run:
+        description: Run containing fex-ios.tar.gz
+        required: true
+        type: string
+      llvm_run:
+        description: Run containing llvm-ios.tar.gz
+        required: true
+        type: string
+      wine_run:
+        description: Run containing wine-ios.tar.gz
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  app:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-fex
+          run-id: ${{ inputs.fex_run }}
+          github-token: ${{ github.token }}
+          path: build-inputs/fex
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-llvm
+          run-id: ${{ inputs.llvm_run }}
+          github-token: ${{ github.token }}
+          path: build-inputs/llvm
+      - uses: actions/download-artifact@v4
+        with:
+          name: ios-wine
+          run-id: ${{ inputs.wine_run }}
+          github-token: ${{ github.token }}
+          path: build-inputs/wine
+      - name: Build and package
+        run: |
+          mkdir -p ci-output
+          set -o pipefail
+          bash scripts/ci-build-app.sh 2>&1 | tee ci-output/app-build.log
+      - name: Preserve package and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Madeira-iPhone
+          path: |
+            ci-output/
+            build/dxmt-ios/obj/*.err
+          if-no-files-found: error
+          retention-days: 14
