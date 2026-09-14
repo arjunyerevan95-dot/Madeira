@@ -4,6 +4,7 @@
 #import "WineProcessBridge.h"
 #import "IOSDisplayShim.h"
 #import "Winios/Winios.h"
+#import "BuiltinJITBridge.h"
 
 // Wine file-based logging (server_ios.c)
 void wine_log_set_file(const char *path);
