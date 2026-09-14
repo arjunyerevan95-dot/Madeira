@@ -33,6 +33,10 @@ bash build/dxmt-ios/build.sh
 xcrun -sdk iphoneos libtool -static -o app/Madeira/libdxmt_combined.a \
   build/dxmt-ios/obj/*.o toolchains/llvm-ios-build/lib/*.a
 
+# Pin the built-in JIT framework so the helper-extension target links the same
+# release on local and CI builds.
+bash scripts/fetch-stikjit.sh
+
 # The upstream project declares this folder as a resource but excludes the
 # separately licensed Microsoft DLLs. Keep the resource folder present.
 mkdir -p app/Madeira/x86_64-vcruntime
@@ -41,7 +45,7 @@ xcodebuild -project app/Madeira.xcodeproj -scheme Madeira \
   -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
   -derivedDataPath build/xcode-derived \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM= \
-  PRODUCT_BUNDLE_IDENTIFIER=com.madeira.emulator IPHONEOS_DEPLOYMENT_TARGET=18.0
+  MADEIRA_APP_BUNDLE_IDENTIFIER=com.madeira.emulator IPHONEOS_DEPLOYMENT_TARGET=18.0
 
 MADEIRA_APP=build/xcode-derived/Build/Products/Release-iphoneos/Madeira.app
 test -s "$MADEIRA_APP/Madeira"
@@ -67,7 +71,7 @@ Madeira iPhone build
 
 This IPA is unsigned. Sign it with your own Apple ID using a sideloading tool.
 The target is a physical ARM64 iPhone/iPad on iOS 18 or later.
-JIT must be enabled through the project's StikDebug workflow before game use.
+JIT can be enabled through Madeira's built-in StikJIT helper or StikDebug.
 The package contains the upstream Wine PE modules and source-built iOS libraries.
 Microsoft's optional Visual C++ redistributable DLLs are not bundled; see
 fetch-vcruntime.md for the upstream instructions.
