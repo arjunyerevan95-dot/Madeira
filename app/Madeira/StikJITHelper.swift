@@ -1,4 +1,5 @@
 import UIKit
+import Darwin
 
 /// Helper to enable JIT via StikDebug/StikJIT URL scheme.
 /// Opens StikDebug with an embedded script, polls for CS_DEBUGGED,
@@ -21,28 +22,45 @@ enum StikJITHelper {
         return scriptBase64
     }
 
-    /// Check if StikDebug or StikJIT is available by trying to open their URL.
+    /// Check if StikDebug is available by trying its current URL scheme.
     static var isAvailable: Bool {
-        guard let url = URL(string: "stikjit://enable-jit") else { return false }
+        guard let url = URL(string: "stikdebug://enable-jit") else { return false }
         return UIApplication.shared.canOpenURL(url)
     }
 
     /// Open StikDebug with our JIT script embedded in the URL.
-    /// StikDebug will attach to our process and run the script.
+    /// StikDebug will attach to this exact process and run Madeira's custom script.
     static func enableJIT(completion: @escaping (Bool) -> Void) {
-        let bundleId = Bundle.main.bundleIdentifier ?? "com.madeira.emulator"
+        if jit_check_debugged() {
+            LogStore.shared.log("JIT already enabled (CS_DEBUGGED set)", level: .success)
+            completion(true)
+            return
+        }
 
-        // Build the URL with script data
-        let scriptData = resolvedScriptBase64.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlString = "stikjit://enable-jit?bundle-id=\(bundleId)&script-data=\(scriptData)"
-
-        guard let url = URL(string: urlString) else {
-            LogStore.shared.log("Failed to build StikJIT URL", level: .error)
+        guard let bundleID = Bundle.main.bundleIdentifier else {
+            LogStore.shared.log("Cannot request JIT: missing bundle identifier", level: .error)
             completion(false)
             return
         }
 
-        LogStore.shared.log("Opening StikDebug to enable JIT...")
+        var components = URLComponents()
+        components.scheme = "stikdebug"
+        components.host = "enable-jit"
+        components.queryItems = [
+            URLQueryItem(name: "bundle-id", value: bundleID),
+            URLQueryItem(name: "pid", value: String(getpid())),
+            // Madeira uses a custom breakpoint protocol. Keep the request
+            // self-contained so users do not have to install a script manually.
+            URLQueryItem(name: "script-data", value: resolvedScriptBase64),
+        ]
+
+        guard let url = components.url else {
+            LogStore.shared.log("Failed to build StikDebug JIT URL", level: .error)
+            completion(false)
+            return
+        }
+
+        LogStore.shared.log("Opening StikDebug to enable JIT for pid \(getpid())...")
 
         UIApplication.shared.open(url, options: [:]) { success in
             if !success {
@@ -51,18 +69,24 @@ enum StikJITHelper {
                 return
             }
 
-            // Poll for CS_DEBUGGED flag
-            pollForJIT(completion: completion)
+            // URL acceptance is only a handoff. Readiness is authoritative once
+            // CS_DEBUGGED appears in this process.
+            pollForJIT(timeout: 45, completion: completion)
         }
     }
 
-    /// Poll every 0.5s until CS_DEBUGGED is set, then call completion.
-    private static func pollForJIT(completion: @escaping (Bool) -> Void) {
+    /// Poll every 0.5s for CS_DEBUGGED, but never leave launch waiting forever.
+    private static func pollForJIT(timeout: TimeInterval, completion: @escaping (Bool) -> Void) {
+        let deadline = Date().addingTimeInterval(timeout)
         Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
             if jit_check_debugged() {
                 timer.invalidate()
                 LogStore.shared.log("JIT enabled! (CS_DEBUGGED set)", level: .success)
                 completion(true)
+            } else if Date() >= deadline {
+                timer.invalidate()
+                LogStore.shared.log("Timed out waiting for StikDebug to enable JIT", level: .error)
+                completion(false)
             }
         }
     }
