@@ -3,6 +3,7 @@ import UIKit
 import QuartzCore
 import Metal
 import os.log
+import UniformTypeIdentifiers
 
 // 2026-07-03 window-hosted Metal layer.
 //
@@ -865,6 +866,7 @@ struct ContentView: View {
     @State private var debuggerAttached = isDebuggerAttached()
     @ObservedObject private var input = InputSettings.shared
     @State private var pointerPanel = false
+    @State private var showingPairingImporter = false
     @Namespace private var pointerNS
     /// .compact = iPhone landscape: game surface expands, arrow keys appear.
     @Environment(\.verticalSizeClass) private var vSizeClass
@@ -904,6 +906,19 @@ struct ContentView: View {
                 jit_install_trap_handler()
                 entitlements = EntitlementStatus.check()
                 logEntitlementStatus()
+            }
+        }
+        .fileImporter(
+            isPresented: $showingPairingImporter,
+            allowedContentTypes: [.data],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first else { return }
+                try StikJITHelper.importBuiltInPairingFile(from: url)
+                logStore.log("Built-in JIT pairing file imported.", level: .success)
+            } catch {
+                logStore.log("Pairing-file import failed: \(error.localizedDescription)", level: .error)
             }
         }
     }
@@ -1148,8 +1163,17 @@ struct ContentView: View {
     private var actionButtons: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                Button("Enable JIT") {
-                    enableJITViaStikDebug()
+                Menu("JIT") {
+                    Button("Enable Built-in StikJIT") {
+                        enableJITBuiltIn()
+                    }
+                    Button("Enable via StikDebug") {
+                        enableJITViaStikDebug()
+                    }
+                    Divider()
+                    Button(StikJITHelper.hasBuiltInPairingFile ? "Replace Pairing File…" : "Import Pairing File…") {
+                        showingPairingImporter = true
+                    }
                 }
                 .buttonStyle(.borderedProminent)
 
@@ -1747,12 +1771,78 @@ struct ContentView: View {
         }
     }
 
+    private func enableJITBuiltIn() {
+        if jit_check_debugged() {
+            jitStatus = .available
+            logStore.log("JIT is already enabled.", level: .success)
+            return
+        }
+
+        guard #available(iOS 17.4, *) else {
+            jitStatus = .unavailable
+            logStore.log("Built-in StikJIT requires iOS 17.4 or later.", level: .error)
+            return
+        }
+        guard getenv("LC_HOME_PATH") == nil else {
+            jitStatus = .unavailable
+            logStore.log("Built-in StikJIT is unavailable inside LiveContainer; use StikDebug instead.", level: .error)
+            return
+        }
+        guard checkAppEntitlement("get-task-allow") else {
+            jitStatus = .unavailable
+            logStore.log("Built-in StikJIT requires get-task-allow in the signed app.", level: .error)
+            return
+        }
+        guard let pairingData = try? Data(contentsOf: StikJITHelper.builtInPairingFileURL) else {
+            jitStatus = .unavailable
+            logStore.log("Import a pairing file from the JIT menu first.", level: .error)
+            showingPairingImporter = true
+            return
+        }
+        guard let scriptData = StikJITHelper.customScriptData else {
+            jitStatus = .unavailable
+            logStore.log("Madeira's embedded JIT script is invalid.", level: .error)
+            return
+        }
+
+        jitStatus = .testing
+        logStore.log("Requesting JIT through Madeira's built-in helper...")
+        MadeiraBuiltinJITBridge.enableJIT(
+            pid: getpid(),
+            pairingData: pairingData,
+            scriptData: scriptData,
+            started: { started, message in
+                guard started else {
+                    jitStatus = .unavailable
+                    logStore.log(message, level: .error)
+                    return
+                }
+                logStore.log(message)
+                // The helper remains blocked inside StikJIT while Madeira's
+                // custom script services executable-region breakpoints. Do not
+                // wait for the extension request itself to finish before Wine.
+                StikJITHelper.waitForJIT(timeout: 45) { attached in
+                    jitStatus = attached ? .available : .unavailable
+                    if attached {
+                        logStore.log("Built-in JIT attached. Madeira can now start Wine.", level: .success)
+                    } else {
+                        logStore.log("Built-in JIT helper started but no debugger attached.", level: .error)
+                    }
+                }
+            },
+            finished: { success, message in
+                logStore.log(message, level: success ? .debug : .error)
+                if !success && !jit_check_debugged() { jitStatus = .unavailable }
+            }
+        )
+    }
+
     /// Full sequence: allocate JIT pool, start wineserver, start Wine.
     /// Debugger stays attached during PE loading so mprotect_exec can use BRK
     /// to prepare code pages. Detach happens after Wine finishes + recovery.
     private func runWineFullSequence() {
         guard jit_check_debugged() else {
-            logStore.log("JIT not enabled. Press 'Enable JIT' first.", level: .error)
+            logStore.log("JIT not enabled. Use the JIT menu first.", level: .error)
             return
         }
 
