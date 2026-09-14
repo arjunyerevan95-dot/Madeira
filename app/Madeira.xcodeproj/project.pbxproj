@@ -52,6 +52,11 @@
 		A1000200 /* LogPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000200 /* LogPattern.swift */; };
 		A1000201 /* LogTail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000201 /* LogTail.swift */; };
 		A1000202 /* FPSOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000202 /* FPSOverlay.swift */; };
+		B1000001 /* BuiltinJITBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = B2000002 /* BuiltinJITBridge.m */; };
+		B1000002 /* MadeiraJITHelper.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B2000003 /* MadeiraJITHelper.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B1000003 /* BuiltinJITRequestHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000005 /* BuiltinJITRequestHandler.swift */; };
+		B1000004 /* StikJIT.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2000006 /* StikJIT.xcframework */; };
+		B1000005 /* StikJIT.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B2000006 /* StikJIT.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -111,7 +116,38 @@
 		A2000200 /* LogPattern.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogPattern.swift; sourceTree = "<group>"; };
 		A2000201 /* LogTail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogTail.swift; sourceTree = "<group>"; };
 		A2000202 /* FPSOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FPSOverlay.swift; sourceTree = "<group>"; };
+		B2000001 /* BuiltinJITBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BuiltinJITBridge.h; sourceTree = "<group>"; };
+		B2000002 /* BuiltinJITBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BuiltinJITBridge.m; sourceTree = "<group>"; };
+		B2000003 /* MadeiraJITHelper.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MadeiraJITHelper.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B2000004 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B2000005 /* BuiltinJITRequestHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltinJITRequestHandler.swift; sourceTree = "<group>"; };
+		B2000006 /* StikJIT.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = StikJIT.xcframework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B3000003 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B1000002 /* MadeiraJITHelper.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3000004 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				B1000005 /* StikJIT.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A3000001 /* Frameworks */ = {
@@ -143,6 +179,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B3000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000004 /* StikJIT.xcframework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -150,6 +194,8 @@
 			isa = PBXGroup;
 			children = (
 				A4000002 /* Madeira */,
+				B4000001 /* MadeiraJITHelper */,
+				B4000002 /* Vendor */,
 				A4000004 /* Libraries */,
 				A4000003 /* Products */,
 			);
@@ -174,6 +220,8 @@
 				A2000031 /* WineProcessBridge.h */,
 				A200000A /* EntitlementChecker.swift */,
 				A2000036 /* StikJITHelper.swift */,
+				B2000001 /* BuiltinJITBridge.h */,
+				B2000002 /* BuiltinJITBridge.m */,
 				A2000021 /* nls */,
 				A2000033 /* aarch64-windows */,
 				A20000F1 /* legal */,
@@ -199,6 +247,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000009 /* Madeira.app */,
+				B2000003 /* MadeiraJITHelper.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -232,7 +281,34 @@
 			name = Libraries;
 			sourceTree = "<group>";
 		};
+		B4000001 /* MadeiraJITHelper */ = {
+			isa = PBXGroup;
+			children = (
+				B2000005 /* BuiltinJITRequestHandler.swift */,
+				B2000004 /* Info.plist */,
+			);
+			path = MadeiraJITHelper;
+			sourceTree = "<group>";
+		};
+		B4000002 /* Vendor */ = {
+			isa = PBXGroup;
+			children = (
+				B2000006 /* StikJIT.xcframework */,
+			);
+			path = Vendor;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
+
+/* Begin PBXContainerItemProxy section */
+		B9000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A6000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B5000001;
+			remoteInfo = MadeiraJITHelper;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXNativeTarget section */
 		A5000001 /* Madeira */ = {
@@ -242,15 +318,34 @@
 				A3000002 /* Sources */,
 				A3000001 /* Frameworks */,
 				A3000003 /* Resources */,
+				B3000003 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B9000002 /* PBXTargetDependency */,
 			);
 			name = Madeira;
 			productName = Madeira;
 			productReference = A2000009 /* Madeira.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B5000001 /* MadeiraJITHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B7000001 /* Build configuration list for PBXNativeTarget "MadeiraJITHelper" */;
+			buildPhases = (
+				B3000001 /* Sources */,
+				B3000002 /* Frameworks */,
+				B3000004 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MadeiraJITHelper;
+			productName = MadeiraJITHelper;
+			productReference = B2000003 /* MadeiraJITHelper.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -263,6 +358,9 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					A5000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					B5000001 = {
 						CreatedOnToolsVersion = 16.0;
 					};
 				};
@@ -281,6 +379,7 @@
 			projectRoot = "";
 			targets = (
 				A5000001 /* Madeira */,
+				B5000001 /* MadeiraJITHelper */,
 			);
 		};
 /* End PBXProject section */
@@ -323,10 +422,27 @@
 				A1000050 /* IOSDisplayShim.m in Sources */,
 				A1000070 /* Winios/Winios.m in Sources */,
 				A1000035 /* StikJITHelper.swift in Sources */,
+				B1000001 /* BuiltinJITBridge.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B1000003 /* BuiltinJITRequestHandler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B9000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B5000001 /* MadeiraJITHelper */;
+			targetProxy = B9000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A8000001 /* Debug */ = {
@@ -430,7 +546,8 @@
 					"$(SRCROOT)/Madeira",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.willfaust.mythicemu;
+				MADEIRA_APP_BUNDLE_IDENTIFIER = com.willfaust.mythicemu;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(MADEIRA_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -481,7 +598,8 @@
 					"$(SRCROOT)/Madeira",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.willfaust.mythicemu;
+				MADEIRA_APP_BUNDLE_IDENTIFIER = com.willfaust.mythicemu;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(MADEIRA_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -492,7 +610,57 @@
 			};
 			name = Release;
 		};
-/* End XCBuildConfiguration section */
+		B8000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UT49TA9TA4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MadeiraJITHelper/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MADEIRA_APP_BUNDLE_IDENTIFIER = com.willfaust.mythicemu;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(MADEIRA_APP_BUNDLE_IDENTIFIER).StikJITHelper";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B8000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = UT49TA9TA4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MadeiraJITHelper/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MADEIRA_APP_BUNDLE_IDENTIFIER = com.willfaust.mythicemu;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(MADEIRA_APP_BUNDLE_IDENTIFIER).StikJITHelper";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+	/* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
 		A7000001 /* Build configuration list for PBXProject "Madeira" */ = {
@@ -513,7 +681,16 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-/* End XCConfigurationList section */
+		B7000001 /* Build configuration list for PBXNativeTarget "MadeiraJITHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B8000001 /* Debug */,
+				B8000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+	/* End XCConfigurationList section */
 	};
 	rootObject = A6000001 /* Project object */;
 }
