@@ -24,3 +24,18 @@ if [[ "$actual" != "$expected" ]]; then
 fi
 ditto -x -k "$archive" "$vendor"
 test -d "$framework"
+
+# StikJIT 1.5.0's generated distribution interfaces were emitted from a module
+# that also declares a public enum named StikJIT. Xcode 26.3 resolves several
+# module-qualified references (for example StikJIT.DDIPaths) against that enum,
+# so the otherwise valid binary framework cannot be imported. Patch only the
+# pinned release's textual interfaces after checksum verification; the binary
+# and ABI remain untouched.
+module_dir="$framework/ios-arm64/StikJIT.framework/Modules/StikJIT.swiftmodule"
+for interface in "$module_dir"/*.swiftinterface; do
+  sed -i '' \
+    -e 's/StikJIT\.StikJIT\./StikJIT./g' \
+    -e 's/StikJIT\.DDIPaths/DDIPaths/g' \
+    -e 's/StikJIT\.DeveloperDiskImageService/DeveloperDiskImageService/g' \
+    "$interface"
+done
