@@ -22,6 +22,34 @@ enum StikJITHelper {
         return scriptBase64
     }
 
+    static var customScriptData: Data? {
+        Data(base64Encoded: resolvedScriptBase64)
+    }
+
+    static var builtInPairingFileURL: URL {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        return documents
+            .appendingPathComponent("StikJIT", isDirectory: true)
+            .appendingPathComponent("pairingFile.plist")
+    }
+
+    static var hasBuiltInPairingFile: Bool {
+        FileManager.default.isReadableFile(atPath: builtInPairingFileURL.path)
+    }
+
+    static func importBuiltInPairingFile(from source: URL) throws {
+        let scoped = source.startAccessingSecurityScopedResource()
+        defer { if scoped { source.stopAccessingSecurityScopedResource() } }
+
+        let data = try Data(contentsOf: source)
+        let destination = builtInPairingFileURL
+        try FileManager.default.createDirectory(
+            at: destination.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try data.write(to: destination, options: .atomic)
+    }
+
     /// Check if StikDebug is available by trying its current URL scheme.
     static var isAvailable: Bool {
         guard let url = URL(string: "stikdebug://enable-jit") else { return false }
@@ -71,12 +99,12 @@ enum StikJITHelper {
 
             // URL acceptance is only a handoff. Readiness is authoritative once
             // CS_DEBUGGED appears in this process.
-            pollForJIT(timeout: 45, completion: completion)
+            waitForJIT(timeout: 45, completion: completion)
         }
     }
 
     /// Poll every 0.5s for CS_DEBUGGED, but never leave launch waiting forever.
-    private static func pollForJIT(timeout: TimeInterval, completion: @escaping (Bool) -> Void) {
+    static func waitForJIT(timeout: TimeInterval, completion: @escaping (Bool) -> Void) {
         let deadline = Date().addingTimeInterval(timeout)
         Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
             if jit_check_debugged() {
