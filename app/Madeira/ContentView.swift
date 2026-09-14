@@ -802,6 +802,11 @@ final class InputSettings: ObservableObject {
     @Published var relative: Bool  = false { didSet { save() } }
     @Published var sensAbs:  Double = 2.0  { didSet { save() } }
     @Published var sensRel:  Double = 2.0  { didSet { save() } }
+    /// Fraction of the on-screen stick diameter ignored around center.
+    /// Keep the historic 0.22 behaviour as the default, but let games with
+    /// twitchier movement tune it without recompiling Madeira.
+    @Published var stickDeadzone: Double = 0.22 { didSet { save() } }
+    @Published var controlHaptics: Bool = true { didSet { save() } }
     /// ml649: heavy diagnostics. Default OFF so the shipped default is the fast
     /// path; flip it on only when a run needs to be explainable.
     @Published var diagnostics = false { didSet { madeira_set_diag_enabled(diagnostics ? 1 : 0); save() } }
@@ -823,6 +828,8 @@ final class InputSettings: ObservableObject {
             relative = j["relative"] as? Bool   ?? false
             sensAbs  = j["sensAbs"]  as? Double ?? 2.0
             sensRel  = j["sensRel"]  as? Double ?? 2.0
+            stickDeadzone = min(max(j["stickDeadzone"] as? Double ?? 0.22, 0.05), 0.45)
+            controlHaptics = j["controlHaptics"] as? Bool ?? true
             diagnostics = j["diagnostics"] as? Bool ?? false
         }
         loading = false
@@ -831,7 +838,14 @@ final class InputSettings: ObservableObject {
 
     private func save() {
         guard !loading else { return }
-        let j: [String: Any] = ["relative": relative, "sensAbs": sensAbs, "sensRel": sensRel, "diagnostics": diagnostics]
+        let j: [String: Any] = [
+            "relative": relative,
+            "sensAbs": sensAbs,
+            "sensRel": sensRel,
+            "stickDeadzone": stickDeadzone,
+            "controlHaptics": controlHaptics,
+            "diagnostics": diagnostics,
+        ]
         guard let d = try? JSONSerialization.data(withJSONObject: j) else { return }
         try? d.write(to: Self.url, options: .atomic)
     }
@@ -2842,7 +2856,7 @@ struct TouchControlButton: View {
     /// 8-way snap. Screen y grows downward, so measure clockwise from "up".
     private func snap(_ t: CGSize) -> Int {
         let d = (t.width * t.width + t.height * t.height).squareRoot()
-        if d < diameter * 0.22 { return -1 }        // deadzone scales with the control
+        if d < diameter * CGFloat(InputSettings.shared.stickDeadzone) { return -1 }
         var a = atan2(t.width, -t.height) * 180 / .pi
         if a < 0 { a += 360 }
         return Int((a + 22.5) / 45.0) % 8
@@ -2870,14 +2884,18 @@ struct TouchControlButton: View {
         let old = Set(stickKeys(stickDir, q)), new = Set(stickKeys(next, q))
         for vk in old.subtracting(new) { winios_post_key(vk, 0) }
         for vk in new.subtracting(old) { winios_post_key(vk, 1) }
-        if stickDir == -1, next != -1 { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        if stickDir == -1, next != -1, InputSettings.shared.controlHaptics {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
         stickDir = next
     }
 
     /// Haptic on the DOWN edge only — a held movement key would otherwise buzz
     /// continuously for as long as you walk.
     private func press(_ down: Bool) {
-        if down { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        if down, InputSettings.shared.controlHaptics {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
         switch control.action {
         case .key(let vk):
             winios_post_key(vk, down ? 1 : 0)
@@ -2900,6 +2918,7 @@ struct MappingPanel: View {
     let control: TouchControl
     let screen: CGSize
     @ObservedObject private var m = TouchControlsModel.shared
+    @ObservedObject private var input = InputSettings.shared
     @State private var tab = 0                    // 0 keyboard, 1 controller
 
 
@@ -2911,8 +2930,11 @@ struct MappingPanel: View {
             }
             Rectangle().fill(.white.opacity(0.15)).frame(height: 1)
             ScrollView {
-                (tab == 0 ? AnyView(keyboardTab) : AnyView(controllerTab))
-                    .padding(10)
+                VStack(alignment: .leading, spacing: 12) {
+                    controlFeelSettings
+                    (tab == 0 ? AnyView(keyboardTab) : AnyView(controllerTab))
+                }
+                .padding(10)
             }
         }
         .frame(width: layout.size.width, height: layout.size.height)
@@ -3045,6 +3067,24 @@ struct MappingPanel: View {
         }
     }
 
+    private var controlFeelSettings: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Text("Stick deadzone")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.55))
+                Slider(value: $input.stickDeadzone, in: 0.05...0.45, step: 0.01)
+                Text("\(Int(input.stickDeadzone * 100))%")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .frame(width: 34, alignment: .trailing)
+            }
+            Toggle("Control haptics", isOn: $input.controlHaptics)
+                .font(.system(size: 10, weight: .semibold))
+                .toggleStyle(.switch)
+        }
+    }
+
     private func section(_ title: String, _ items: [(String, ControlAction)]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
@@ -3061,7 +3101,7 @@ struct MappingPanel: View {
     private func chip(_ label: String, _ action: ControlAction) -> some View {
         let on = control.action == action
         return Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            if input.controlHaptics { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
             if let i = m.index(of: control.id) { m.controls[i].action = action }
         } label: {
             Text(label)
